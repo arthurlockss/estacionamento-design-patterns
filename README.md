@@ -1,95 +1,105 @@
-# Sistema de Estacionamento - Design Patterns
+# Sistema de Estacionamento - State e Decorator
 
-Aplicação Java desenvolvida para simular a gestão de vagas e cobrança de permanência em um estacionamento, aplicando os padrões de projeto comportamental **State** e estrutural **Decorator**.
+Trabalho da Parte 1 do projeto final de Padrões de Projeto. O tema sorteado foi **Estacionamento** (entidades Vaga, Veículo e Permanência), com os padrões **State** e **Decorator**.
 
-Projeto desenvolvido como entrega da **Parte 1** da disciplina de Padrões de Projeto / Arquitetura de Software.
+## Descrição
 
----
+Aplicação de console em Java que simula um estacionamento pequeno. Tudo fica em memória, sem banco de dados.
 
-## 📋 Descrição do Sistema
+- Cada vaga está livre ou ocupada. O que ela aceita fazer depende do estado atual (State).
+- Na saída, o valor é calculado a partir das horas de permanência, e serviços extras como lavagem e seguro podem ser somados à tarifa (Decorator).
 
-O sistema gerencia o fluxo de entrada e saída de veículos em vagas de estacionamento sem o uso de banco de dados (persistência em memória). As principais funcionalidades compreendem:
-- Controle do ciclo de vida das vagas de estacionamento utilizando o padrão **State** (ex.: vaga livre ou ocupada).
-- Cálculo dinâmico do valor total da permanência utilizando o padrão **Decorator**, permitindo agregar serviços adicionais (como lavagem e seguro) à tarifa base de horas de permanência.
+## Tecnologias e pré-requisitos
 
----
+- Java 17 ou superior
+- Maven 3.8 ou superior (opcional, dá para compilar só com o `javac`)
 
-## 🛠️ Tecnologias e Pré-requisitos
+Não há dependências externas.
 
-- **Linguagem:** Java 17 (ou superior)
-- **Gerenciador de Dependências e Build:** Apache Maven 3.8+
-- **Paradigma:** Orientação a Objetos e Design Patterns (GoF)
+## Como executar
 
----
+Com Maven, na raiz do projeto:
 
-## 🚀 Instruções de Execução
-
-### Opção 1: Via Maven (Recomendado)
-
-Na raiz do projeto, execute:
 ```bash
-# Compilar o projeto
-mvn clean compile
-
-# Executar a aplicação
-mvn exec:java
+mvn clean compile exec:java
 ```
 
-### Opção 2: Via linha de comando (Java puro)
+Sem Maven:
 
 ```bash
-# Compilar
-javac -d bin src/main/java/com/estacionamento/**/*.java
-
-# Executar
+javac -d bin $(find src/main/java -name "*.java")
 java -cp bin com.estacionamento.Main
 ```
 
----
+## Exemplo de uso
 
-## 💡 Exemplos de Uso
+A classe `Main` roda um roteiro fixo, com horários definidos no código para que o resultado seja sempre o mesmo:
 
-Ao executar a aplicação:
-1. Uma lista de vagas é inicializada (todas no estado `Livre`).
-2. Um veículo dá entrada em uma vaga específica. A vaga transiciona seu estado para `Ocupada`.
-3. Durante ou ao término da permanência, serviços opcionais (como `Lavagem` e `Seguro`) são decorados sobre a tarifa base.
-4. Na saída do veículo, o sistema calcula o valor total, exibe o comprovante detalhado e a vaga transiciona de volta para o estado `Livre`.
+1. Cria três vagas livres.
+2. Um Gol entra na vaga 1 às 08:00 e um Onix entra na vaga 2 às 09:15.
+3. Tenta colocar outro carro na vaga 1 e liberar a vaga 3, que está vazia. As duas operações são recusadas pelo estado da vaga.
+4. O Gol sai às 10:30 e paga só a tarifa base.
+5. O Onix sai às 14:00 com lavagem e seguro.
+6. A vaga 1, já liberada, recebe um novo carro.
 
----
+Trecho da saída:
 
-## 🏗️ Patterns Utilizados
+```
+=== 3. Operacoes invalidas (o State impede) ===
+Ocupar a vaga #1, que ja esta ocupada...
+  -> Bloqueado: Vaga #1 ja esta ocupada por VW Gol (Placa: ABC-1234).
+Liberar a vaga #3, que ja esta livre...
+  -> Bloqueado: Vaga #3 ja esta livre e nao pode ser liberada novamente.
 
-### 1. State (Comportamental)
-- **Problema Resolvido:** Elimina estruturas condicionais extensas (`if/else` ou `switch`) para verificar e alterar o estado de uma vaga (ex.: impedir que uma vaga ocupada receba outro carro ou seja liberada duas vezes).
-- **Classes Envolvidas:**
-  - `EstadoVaga` (Interface): Contrato com as operações de transição (`ocupar`, `liberar`, `getNome`).
-  - `VagaLivreState`: Permite a ocupação e transiciona a vaga para ocupada.
-  - `VagaOcupadaState`: Rejeita nova ocupação e permite a liberação da vaga.
-  - `Vaga`: Contexto que mantém a referência ao estado atual e delega o comportamento.
+=== 5. Saida do Chevrolet Onix (tarifa + lavagem + seguro) ===
++---------------- COMPROVANTE ----------------
+| Veiculo : Chevrolet Onix (Placa: XYZ-9876)
+| Vaga    : #2
+| Entrada : 25/11/2026 09:15
+| Saida   : 25/11/2026 14:00
+| Itens   : Tarifa base (5 horas x R$ 10,00) + Lavagem (R$ 35,00) + Seguro (R$ 15,00)
+| TOTAL   : R$ 100,00
++---------------------------------------------
+```
 
-### 2. Decorator (Estrutural)
-- **Problema Resolvido:** Permite compor dinamicamente funcionalidades e custos adicionais sobre a tarifa base de permanência em tempo de execução, evitando a explosão de subclasses combinatórias (ex.: `TarifaComLavagem`, `TarifaComSeguroELavagem`, etc.).
-- **Classes Envolvidas:**
-  - `ServicoPermanencia` (Component Interface): Define as operações `calcularValor()` e `getDescricao()`.
-  - `TarifaBase` (Concrete Component): Implementação básica que calcula o valor com base nas horas de permanência.
-  - `ServicoDecorator` (Decorator Base): Mantém a referência para outro `ServicoPermanencia`.
-  - `LavagemDecorator`, `SeguroDecorator` (Concrete Decorators): Agregam valor e descrição ao serviço encapsulado.
+A cobrança é por hora cheia, arredondada para cima: 4h45 vira 5 horas. Valores padrão: R$ 10,00 por hora, lavagem a R$ 35,00 e seguro a R$ 15,00.
 
----
+## Padrões utilizados
 
-## 🤖 Declaração de Uso de Inteligência Artificial
+### State
 
-Em conformidade com as regras da Parte 1 da atividade:
-- **Modelo utilizado:** Gemini (DeepMind) / ChatGPT.
-- **Partes em que foi utilizada:** Auxílio na idealização arquitetural dos padrões, estruturação inicial do `pom.xml`, organização de boas práticas de documentação no `README.md` e validação do modelo conceitual de domínio.
+Sem o padrão, a classe `Vaga` precisaria de `if` em cada operação para saber se pode ser ocupada ou liberada. Com o State, cada estado é uma classe e a vaga só repassa a chamada para o estado atual.
 
----
+- `EstadoVaga`: interface com `ocupar`, `liberar` e `getNome`.
+- `VagaLivreState`: aceita um veículo e muda a vaga para ocupada. Liberar lança exceção.
+- `VagaOcupadaState`: recusa outro veículo e, ao liberar, volta a vaga para livre.
+- `Vaga`: o contexto. Guarda o estado atual e delega `ocupar()` e `liberar()` a ele.
 
-## 👥 Contribuição dos Integrantes (Equipe Dona)
+### Decorator
 
-| Integrante | GitHub | Contribuição Principal |
+Os serviços extras podem ser combinados de várias formas (só lavagem, só seguro, os dois, nenhum). Criar uma subclasse para cada combinação não escala. Com o Decorator, cada serviço embrulha o anterior e soma seu valor e sua descrição.
+
+- `ServicoPermanencia`: interface com `calcularValor()` e `getDescricao()`.
+- `TarifaBase`: componente concreto, calcula horas x valor da hora a partir da `Permanencia`.
+- `ServicoDecorator`: classe abstrata que guarda o serviço embrulhado e repassa as chamadas.
+- `LavagemDecorator` e `SeguroDecorator`: somam o próprio valor ao do serviço embrulhado.
+
+Exemplo de composição:
+
+```java
+ServicoPermanencia servico = new SeguroDecorator(new LavagemDecorator(new TarifaBase(permanencia)));
+```
+
+## Uso de IA
+
+- Ferramentas: ChatGPT, Gemini e Claude.
+- Onde foram usadas: discussão inicial de como aplicar os dois padrões ao tema, configuração do `pom.xml`, apoio na redação e organização deste README, ajuda na escrita da classe `Main` e revisão do código em busca de erros e inconsistências, com os ajustes conferidos pelo grupo.
+
+## Contribuição dos integrantes
+
+| Integrante | GitHub | Contribuição |
 |---|---|---|
-| **Arthur Locks** | [@arthurlockss](https://github.com/arthurlockss) | Configuração do repositório, Maven (`pom.xml`), `.gitignore`, modelagem inicial das entidades de domínio (`Veiculo`, `Vaga`, `Permanencia`) e base do `README.md`. |
-| *Integrante 2* | @usuario | Implementação do padrão **State** (`EstadoVaga`, `VagaLivreState`, `VagaOcupadaState`) e transições na classe `Vaga`. |
-| *Integrante 3* | @usuario | Implementação do padrão **Decorator** (`ServicoPermanencia`, `TarifaBase`, `ServicoDecorator`, adicionais de serviço). |
-| *Integrante 4* | @usuario | Implementação da classe executável `Main`, orquestração do fluxo ponta a ponta e testes de console. |
+| Arthur Locks | [@arthurlockss](https://github.com/arthurlockss) | Criação do repositório, `pom.xml`, `.gitignore`, entidades `Veiculo`, `Vaga` e `Permanencia` e primeira versão do README. |
+| Luiz Coral | [@Luizcoral](https://github.com/Luizcoral) | Padrão State: `EstadoVaga`, `VagaLivreState`, `VagaOcupadaState` e ligação com a classe `Vaga`. |
+| Bernardo | [@bernardosvent](https://github.com/bernardosvent) | Padrão Decorator: `ServicoPermanencia`, `TarifaBase`, `ServicoDecorator`, `LavagemDecorator` e `SeguroDecorator`. |
+| Mateus | [@mateusinacion](https://github.com/mateusinacion) | Classe `Main` com o fluxo completo, testes manuais no console e revisão final do README. |
