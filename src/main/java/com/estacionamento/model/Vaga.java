@@ -33,6 +33,10 @@ public class Vaga {
         return numero;
     }
 
+    public void setNumero(int numero) {
+        this.numero = numero;
+    }
+
     public Veiculo getVeiculoAtual() {
         return veiculoAtual;
     }
